@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DTS Worksheet Grader</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --ink: #0f0e0c; --ink-mid: #4a4843; --ink-muted: #9a9690;
+    --paper: #f5f2ec; --paper-warm: #ede9e0; --paper-dark: #e0dbd0;
+    --accent: #2d5a3d; --accent-light: #e8f0ea; --accent-mid: #4a7c5f;
+    --danger: #8b2e2e; --danger-light: #f5e8e8;
+    --border: rgba(15,14,12,0.12); --border-strong: rgba(15,14,12,0.22);
+    --radius: 4px; --radius-lg: 8px;
+  }
+  body { font-family: 'DM Mono', monospace; background: var(--paper); color: var(--ink); font-size: 13px; line-height: 1.6; }
+  .page { max-width: 700px; margin: 0 auto; padding: 28px 20px 60px; }
+  .site-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:28px; padding-bottom:16px; border-bottom:1px solid var(--border-strong); }
+  .logo-block h1 { font-family:'Fraunces',serif; font-size:22px; font-weight:600; letter-spacing:-0.5px; }
+  .logo-block p { font-size:11px; color:var(--ink-muted); margin-top:2px; letter-spacing:0.04em; text-transform:uppercase; }
+  .badge { font-size:10px; background:var(--accent-light); color:var(--accent); border:1px solid rgba(45,90,61,0.2); border-radius:99px; padding:3px 10px; font-weight:500; }
+  .api-row { display:flex; gap:8px; align-items:center; margin-bottom:20px; background:var(--paper-warm); border:1px solid var(--border-strong); border-radius:var(--radius-lg); padding:12px 16px; }
+  .api-row label { font-size:10px; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-mid); white-space:nowrap; font-weight:500; }
+  .api-row input { flex:1; background:white; border:1px solid var(--border-strong); border-radius:var(--radius); padding:6px 10px; font-family:'DM Mono',monospace; font-size:12px; color:var(--ink); outline:none; }
+  .api-row input:focus { border-color:var(--accent-mid); }
+  .api-row input::placeholder { color:var(--ink-muted); }
+  .card { background:white; border:1px solid var(--border-strong); border-radius:var(--radius-lg); overflow:hidden; margin-bottom:16px; box-shadow:0 1px 3px rgba(0,0,0,0.05); }
+  .card-header { padding:12px 18px; border-bottom:1px solid var(--border); background:var(--paper-warm); display:flex; align-items:center; gap:8px; }
+  .step { width:20px; height:20px; border-radius:50%; background:var(--ink); color:white; font-size:10px; font-weight:500; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .card-header h2 { font-family:'Fraunces',serif; font-size:14px; font-weight:600; }
+  .card-body { padding:16px 18px; }
+  .drop-zone { border:1.5px dashed var(--border-strong); border-radius:var(--radius-lg); padding:28px 16px; text-align:center; cursor:pointer; transition:all 0.15s; background:var(--paper); position:relative; }
+  .drop-zone:hover,.drop-zone.drag-over { border-color:var(--accent-mid); background:var(--accent-light); }
+  .drop-zone input[type="file"] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+  .drop-zone h3 { font-family:'Fraunces',serif; font-size:15px; font-weight:300; font-style:italic; margin-bottom:4px; }
+  .drop-zone p { font-size:11px; color:var(--ink-muted); text-transform:uppercase; letter-spacing:0.06em; }
+  .file-loaded { display:flex; align-items:center; gap:10px; padding:10px 12px; background:var(--accent-light); border:1px solid rgba(45,90,61,0.2); border-radius:var(--radius); margin-top:12px; }
+  .file-loaded svg { flex-shrink:0; color:var(--accent); }
+  .file-name { font-size:12px; font-weight:500; color:var(--accent); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .file-size { font-size:10px; color:var(--accent-mid); }
+  .select-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:6px; }
+  .rubric-option { position:relative; }
+  .rubric-option input[type="radio"] { position:absolute; opacity:0; width:0; height:0; }
+  .rubric-option label { display:block; padding:8px 12px; border:1px solid var(--border-strong); border-radius:var(--radius); cursor:pointer; transition:all 0.12s; background:var(--paper); }
+  .rubric-option label:hover { border-color:var(--accent-mid); background:var(--accent-light); }
+  .rubric-option input:checked + label { background:var(--ink); border-color:var(--ink); color:white; }
+  .rubric-key { display:block; font-size:14px; font-weight:500; margin-bottom:1px; }
+  .rubric-name { display:block; font-size:9px; opacity:0.65; letter-spacing:0.04em; text-transform:uppercase; }
+  .field-row { display:flex; flex-direction:column; gap:5px; }
+  .field-row label { font-size:10px; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-mid); font-weight:500; }
+  .field-row input[type="text"] { background:var(--paper); border:1px solid var(--border-strong); border-radius:var(--radius); padding:8px 12px; font-family:'DM Mono',monospace; font-size:13px; color:var(--ink); outline:none; }
+  .field-row input:focus { border-color:var(--accent-mid); }
+  .field-row input::placeholder { color:var(--ink-muted); }
+  .grade-btn { width:100%; padding:12px 20px; background:var(--ink); color:white; border:none; border-radius:var(--radius-lg); font-family:'DM Mono',monospace; font-size:13px; font-weight:500; letter-spacing:0.06em; text-transform:uppercase; cursor:pointer; transition:all 0.15s; display:flex; align-items:center; justify-content:center; gap:8px; }
+  .grade-btn:hover:not(:disabled) { background:var(--accent); }
+  .grade-btn:disabled { opacity:0.4; cursor:not-allowed; }
+  .spinner { width:14px; height:14px; border:2px solid rgba(255,255,255,0.3); border-top-color:white; border-radius:50%; animation:spin 0.7s linear infinite; display:none; flex-shrink:0; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  #results { display:none; }
+  .score-banner { background:var(--ink); color:white; padding:20px 24px; border-radius:var(--radius-lg); margin-bottom:16px; display:flex; align-items:center; gap:20px; }
+  .score-circle { width:68px; height:68px; border-radius:50%; border:2px solid rgba(255,255,255,0.2); display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0; }
+  .score-pct { font-family:'Fraunces',serif; font-size:22px; font-weight:600; line-height:1; }
+  .score-pct-label { font-size:9px; opacity:0.6; text-transform:uppercase; letter-spacing:0.06em; }
+  .score-details h3 { font-family:'Fraunces',serif; font-size:17px; font-weight:300; font-style:italic; margin-bottom:3px; }
+  .score-sub { font-size:11px; opacity:0.65; }
+  .score-pill { margin-left:auto; padding:5px 12px; border-radius:99px; font-size:11px; font-weight:500; border:1px solid rgba(255,255,255,0.3); text-transform:uppercase; letter-spacing:0.05em; flex-shrink:0; }
+  .section-label { font-size:10px; text-transform:uppercase; letter-spacing:0.1em; color:var(--ink-muted); font-weight:500; margin-bottom:10px; padding-bottom:6px; border-bottom:1px solid var(--border); }
+  .mcq-list { display:flex; flex-direction:column; gap:6px; }
+  .mcq-row { display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:var(--radius); border:1px solid var(--border); background:var(--paper); }
+  .mcq-row.correct { background:var(--accent-light); border-color:rgba(45,90,61,0.2); }
+  .mcq-row.wrong { background:var(--danger-light); border-color:rgba(139,46,46,0.2); }
+  .mcq-q { font-size:11px; color:var(--ink-muted); width:22px; flex-shrink:0; }
+  .mcq-ans { font-size:16px; font-weight:500; width:24px; }
+  .mcq-row.correct .mcq-ans { color:var(--accent); }
+  .mcq-row.wrong .mcq-ans { color:var(--danger); }
+  .mcq-status { font-size:10px; text-transform:uppercase; letter-spacing:0.05em; }
+  .mcq-row.correct .mcq-status { color:var(--accent); }
+  .mcq-row.wrong .mcq-status { color:var(--danger); }
+  .mcq-correct-ans { margin-left:auto; font-size:10px; color:var(--ink-muted); }
+  .frq-result { background:var(--paper-warm); border:1px solid var(--border-strong); border-radius:var(--radius-lg); padding:16px 18px; }
+  .frq-score-row { display:flex; align-items:baseline; gap:6px; margin-bottom:10px; }
+  .frq-score-num { font-family:'Fraunces',serif; font-size:30px; font-weight:600; color:var(--ink); line-height:1; }
+  .frq-score-denom { font-size:15px; color:var(--ink-muted); }
+  .frq-bar-track { height:4px; background:var(--paper-dark); border-radius:2px; margin-bottom:12px; overflow:hidden; }
+  .frq-bar-fill { height:100%; border-radius:2px; background:var(--accent); transition:width 0.6s ease; }
+  .frq-feedback { font-size:12px; color:var(--ink-mid); line-height:1.7; padding-top:10px; border-top:1px solid var(--border); }
+  .error-msg { background:var(--danger-light); border:1px solid rgba(139,46,46,0.2); border-radius:var(--radius); padding:10px 14px; font-size:12px; color:var(--danger); display:none; margin-bottom:12px; }
+  /* API key modal */
+  .modal-overlay { position:fixed; inset:0; background:rgba(15,14,12,0.55); z-index:100; display:flex; align-items:center; justify-content:center; padding:20px; }
+  .modal { background:white; border-radius:var(--radius-lg); padding:28px; max-width:420px; width:100%; box-shadow:0 8px 32px rgba(0,0,0,0.18); }
+  .modal h2 { font-family:'Fraunces',serif; font-size:20px; font-weight:600; margin-bottom:6px; }
+  .modal p { font-size:12px; color:var(--ink-mid); line-height:1.6; margin-bottom:16px; }
+  .modal a { color:var(--accent); text-decoration:underline; }
+  .modal input { width:100%; background:var(--paper); border:1px solid var(--border-strong); border-radius:var(--radius); padding:10px 12px; font-family:'DM Mono',monospace; font-size:13px; color:var(--ink); outline:none; margin-bottom:10px; }
+  .modal input:focus { border-color:var(--accent-mid); }
+  .modal input::placeholder { color:var(--ink-muted); }
+  .modal-save-btn { width:100%; padding:11px; background:var(--ink); color:white; border:none; border-radius:var(--radius); font-family:'DM Mono',monospace; font-size:13px; font-weight:500; cursor:pointer; letter-spacing:0.05em; text-transform:uppercase; transition:background 0.15s; }
+  .modal-save-btn:hover { background:var(--accent); }
+  .modal-error { font-size:11px; color:var(--danger); margin-bottom:8px; display:none; }
+  /* Key status bar */
+  .key-bar { display:flex; align-items:center; gap:10px; padding:10px 14px; background:var(--accent-light); border:1px solid rgba(45,90,61,0.2); border-radius:var(--radius-lg); margin-bottom:20px; }
+  .key-bar-dot { width:7px; height:7px; border-radius:50%; background:var(--accent); flex-shrink:0; }
+  .key-bar-text { font-size:11px; color:var(--accent); flex:1; }
+  .key-bar-btn { font-size:11px; color:var(--ink-muted); background:none; border:none; cursor:pointer; padding:2px 6px; border-radius:3px; font-family:'DM Mono',monospace; }
+  .key-bar-btn:hover { background:var(--paper-dark); color:var(--ink); }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="site-header">
+    <div class="logo-block">
+      <h1>DTS Grader</h1>
+      <p>Dollars to Scholars — Worksheet Grader</p>
+    </div>
+    <span class="badge">AI-Powered</span>
+  </header>
+
+  <!-- API Key Modal -->
+  <div class="modal-overlay" id="apiModal">
+    <div class="modal">
+      <h2>Enter your API key</h2>
+      <p>This tool uses the <a href="https://www.anthropic.com" target="_blank">Anthropic Claude API</a> to read and grade worksheets. Your key is saved only in your browser and never sent to anyone else.<br><br>Get a key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys.</p>
+      <input type="password" id="apiKeyInput" placeholder="sk-ant-..." autocomplete="off">
+      <div class="modal-error" id="modalError">Please enter a valid API key (starts with sk-ant-).</div>
+      <button class="modal-save-btn" onclick="saveApiKey()">Save & Continue</button>
+    </div>
+  </div>
+
+  <!-- Key status bar (shown after key is set) -->
+  <div class="key-bar" id="keyBar" style="display:none">
+    <div class="key-bar-dot"></div>
+    <span class="key-bar-text" id="keyBarText">API key saved</span>
+    <button class="key-bar-btn" onclick="forgetKey()">Change key</button>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="step">1</div><h2>Upload student worksheet</h2></div>
+    <div class="card-body">
+      <div class="drop-zone" id="dropZone">
+        <input type="file" id="fileInput" accept=".pdf,image/*">
+        <svg width="36" height="36" viewBox="0 0 44 44" fill="none" style="margin:0 auto 10px;opacity:0.35;display:block">
+          <rect x="8" y="4" width="22" height="32" rx="2" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M24 4v8h6" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M22 24v8M18 28l4-4 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <h3>Drop PDF or image here</h3>
+        <p>PDF · JPG · PNG</p>
+      </div>
+      <div class="file-loaded" id="fileLoaded" style="display:none">
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M4 4h8l4 4v8a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1z" stroke="currentColor" stroke-width="1.5"/><path d="M12 4v4h4" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+        <span class="file-name" id="fileName"></span>
+        <span class="file-size" id="fileSize"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="step">2</div><h2>Select rubric</h2></div>
+    <div class="card-body">
+      <div class="select-grid">
+        <div class="rubric-option"><input type="radio" name="rubric" id="r-G1" value="G1"><label for="r-G1"><span class="rubric-key">G1</span><span class="rubric-name">Saving</span></label></div>
+        <div class="rubric-option"><input type="radio" name="rubric" id="r-G2" value="G2"><label for="r-G2"><span class="rubric-key">G2</span><span class="rubric-name">Interest</span></label></div>
+        <div class="rubric-option"><input type="radio" name="rubric" id="r-G3" value="G3"><label for="r-G3"><span class="rubric-key">G3</span><span class="rubric-name">Investing</span></label></div>
+        <div class="rubric-option"><input type="radio" name="rubric" id="r-W1" value="W1"><label for="r-W1"><span class="rubric-key">W1</span><span class="rubric-name">Spending</span></label></div>
+        <div class="rubric-option"><input type="radio" name="rubric" id="r-W2" value="W2"><label for="r-W2"><span class="rubric-key">W2</span><span class="rubric-name">Credit</span></label></div>
+        <div class="rubric-option"><input type="radio" name="rubric" id="r-W3" value="W3"><label for="r-W3"><span class="rubric-key">W3</span><span class="rubric-name">Debt</span></label></div>
+        <div class="rubric-option"><input type="radio" name="rubric" id="r-O1" value="O1"><label for="r-O1"><span class="rubric-key">O1</span><span class="rubric-name">Employment</span></label></div>
+        <div class="rubric-option"><input type="radio" name="rubric" id="r-O2" value="O2"><label for="r-O2"><span class="rubric-key">O2</span><span class="rubric-name">Income</span></label></div>
+        <div class="rubric-option"><input type="radio" name="rubric" id="r-H1" value="H1"><label for="r-H1"><span class="rubric-key">H1</span><span class="rubric-name">Bank Account</span></label></div>
+        <div class="rubric-option"><input type="radio" name="rubric" id="r-H2" value="H2"><label for="r-H2"><span class="rubric-key">H2</span><span class="rubric-name">SMART Goals</span></label></div>
+        <div class="rubric-option"><input type="radio" name="rubric" id="r-R1" value="R1"><label for="r-R1"><span class="rubric-key">R1</span><span class="rubric-name">Risk</span></label></div>
+        <div class="rubric-option"><input type="radio" name="rubric" id="r-T1" value="T1"><label for="r-T1"><span class="rubric-key">T1</span><span class="rubric-name">Tax</span></label></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="step">3</div><h2>Student name <span style="font-weight:300;font-size:12px;color:var(--ink-muted)">(optional)</span></h2></div>
+    <div class="card-body">
+      <div class="field-row">
+        <label for="studentName">Full name</label>
+        <input type="text" id="studentName" placeholder="e.g. Jane Doe">
+      </div>
+    </div>
+  </div>
+
+  <div class="error-msg" id="errorMsg"></div>
+
+  <button class="grade-btn" id="gradeBtn" onclick="gradeWorksheet()">
+    <div class="spinner" id="spinner"></div>
+    <span id="gradeBtnText">Grade Worksheet</span>
+  </button>
+
+  <div id="results">
+    <div style="height:24px"></div>
+    <div class="score-banner">
+      <div class="score-circle">
+        <span class="score-pct" id="pctDisplay">—</span>
+        <span class="score-pct-label">score</span>
+      </div>
+      <div class="score-details">
+        <h3 id="studentDisplay">Student</h3>
+        <div class="score-sub" id="totalDisplay"></div>
+      </div>
+      <div class="score-pill" id="gradePill"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="step" style="background:var(--accent)">✓</div><h2>MCQ results</h2></div>
+      <div class="card-body">
+        <div class="section-label" id="mcqScoreLabel"></div>
+        <div class="mcq-list" id="mcqList"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="step" style="background:var(--accent)">✓</div><h2>Free response</h2></div>
+      <div class="card-body">
+        <div class="frq-result">
+          <div class="frq-score-row">
+            <span class="frq-score-num" id="frqScoreNum">—</span>
+            <span class="frq-score-denom" id="frqScoreDenom"></span>
+          </div>
+          <div class="frq-bar-track"><div class="frq-bar-fill" id="frqBar" style="width:0%"></div></div>
+          <div class="frq-feedback" id="frqFeedback"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const RUBRICS = {
+  G1:{name:"Saving — G1",mcq:{"1":"C","2":"D","3":"B"},frqMax:3,criteria:`Score 0 if the student only restates the problem without a direct answer.\nAward 1 point each (max 3) for:\n  1. States a clear and reasonable savings percentage (e.g., 10%, 25%)\n  2. Provides a logical, financially sound reason for saving that percentage\n  3. Lists three specific and plausible saving goals (e.g., college, car, travel)`},
+  G2:{name:"Interest — G2",mcq:{"1":"B","2":"D","3":"E"},frqMax:2,criteria:`Score 0 if the student only restates the problem without a direct answer.\nAward 1 point each (max 2) for:\n  1. Identifies a correct financial principle such as compound interest, long-term growth, or more time for money to accumulate\n  2. Provides a clear, logically reasoned explanation of how early saving increases value over time`},
+  G3:{name:"Investing — G3",mcq:{"1":"D","2":"A","3":"B"},frqMax:2,criteria:`Score 0 if the student only restates the problem without a direct answer.\nAward 1 point each (max 2) for:\n  1. Provides a valid, realistic investing tip such as diversification, risk tolerance, research, or starting small\n  2. Gives a coherent and financially accurate justification for why that tip is important`},
+  W1:{name:"Spending — W1",mcq:{"1":"B","2":"E","3":"C"},frqMax:4,criteria:`Score 0 if the student only restates the problem without a direct answer.\nAward 1 point each (max 4) for:\n  1. States a financially sound spending habit\n  2. Gives a specific, relevant example illustrating that first habit\n  3. States a second, distinct spending habit\n  4. Gives a specific, relevant example illustrating the second habit`},
+  W2:{name:"Credit — W2",mcq:{"1":"B","2":"E","3":"A"},frqMax:3,criteria:`Score 0 if the student only restates the problem without a direct answer.\nAward 1 point each (max 3) for:\n  1. States a correct and clear distinction between loans and credit cards\n  2. Gives a realistic example of what loans pay for (e.g., car loan, student loan)\n  3. Gives a realistic example of what credit cards pay for (e.g., groceries, online purchases)`},
+  W3:{name:"Debt — W3",mcq:{"1":"A","2":"D","3":"E"},frqMax:3,criteria:`Score 0 if the student only restates the problem without a direct answer.\nAward 1 point each (max 3) for:\n  1. Offers realistic and sound debt advice (e.g., make a payment plan, avoid new debt, talk to a counselor)\n  2. Provides a clear explanation of how that advice helps\n  3. Explanation must be financially responsible`},
+  O1:{name:"Employment — O1",mcq:{"1":"B","2":"E","3":"C"},frqMax:3,criteria:`Score 0 if the student only restates the problem without a direct answer.\nAward 1 point each (max 3) for:\n  1. Names a feasible job suitable for a student\n  2. Gives a logical method for obtaining the job (e.g., resume, application, interview)\n  3. Steps are clear, realistic, and coherent`},
+  O2:{name:"Income — O2",mcq:{"1":"B","2":"A","3":"E"},frqMax:3,criteria:`Score 0 if the student only restates the problem without a direct answer.\nAward 1 point each (max 3) for:\n  1. Provides valid financial advice for managing income (e.g., budgeting, saving a portion, tracking spending)\n  2. Explains why that advice is effective\n  3. Explanation is logical and financially reasonable`},
+  H1:{name:"Bank Account — H1",mcq:{"1":"E","2":"C","3":"D"},frqMax:3,criteria:`Score 0 if the student only restates the problem without a direct answer.\nAward 1 point each (max 3) for:\n  1. Identifies a responsible banking habit (e.g., tracking balance regularly)\n  2. Identifies a second, distinct responsible banking habit (e.g., avoiding overdrafts)\n  3. Each habit is clearly explained or inherently understandable`},
+  H2:{name:"SMART Goals — H2",mcq:{"1":"C","2":"B","3":"E"},frqMax:3,criteria:`Score 0 if the student only restates the problem without a direct answer.\nAward 1 point each (max 3) for:\n  1. Provides a clear, specific financial goal\n  2. The goal is measurable, achievable, relevant, and timely (SMART)\n  3. Student explicitly connects the goal to one financial literacy topic in the program`},
+  R1:{name:"Risk — R1",mcq:{"1":"A","2":"C","3":"D"},frqMax:4,criteria:`Score 0 if the student only restates the problem without a direct answer.\nAward 1 point each (max 4) for:\n  1. Provides a correct, realistic low-risk asset or activity (e.g., savings account, government bonds)\n  2. Provides a correct, realistic high-risk asset or activity (e.g., cryptocurrency, stock trading)\n  3. Gives a clear, accurate explanation of why the low-risk example is low risk\n  4. Gives a clear, accurate explanation of why the high-risk example is high risk`},
+  T1:{name:"Tax — T1",mcq:{"1":"B","2":"D","3":"C"},frqMax:2,criteria:`Score 0 if the student only restates the problem without a direct answer.\nAward 1 point each (max 2) for:\n  1. Identifies a valid reason why understanding taxes matters (e.g., taxes reduce take-home income)\n  2. Provides a clear, specific, financially accurate explanation of how taxes impact budgeting, income, or savings`},
+};
+
+let fileData = null, fileMediaType = null;
+
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+fileInput.addEventListener('change', () => { if (fileInput.files[0]) handleFile(fileInput.files[0]); });
+
+function handleFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  const typeMap = { pdf:'application/pdf', jpg:'image/jpeg', jpeg:'image/jpeg', png:'image/png' };
+  if (!typeMap[ext]) { showError('Unsupported file type. Please upload a PDF or image.'); return; }
+  fileMediaType = typeMap[ext];
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    // PDFs: send natively — Claude API supports PDF up to ~32MB
+    if (fileMediaType === 'application/pdf') {
+      const b64 = e.target.result.split(',')[1];
+      const sizeMB = (b64.length * 0.75 / 1024 / 1024).toFixed(1);
+      if (parseFloat(sizeMB) > 30) {
+        showError(`PDF is ${sizeMB} MB — please compress it below 30 MB and re-upload.`);
+        return;
+      }
+      fileData = b64;
+      document.getElementById('fileName').textContent = file.name;
+      document.getElementById('fileSize').textContent = sizeMB + ' MB';
+      document.getElementById('fileLoaded').style.display = 'flex';
+      return;
+    }
+    // Images: resize to max 1568px on longest side, compress to JPEG ~85%
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 1568;
+      let { width, height } = img;
+      if (width > MAX || height > MAX) {
+        if (width > height) { height = Math.round(height * MAX / width); width = MAX; }
+        else { width = Math.round(width * MAX / height); height = MAX; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      const compressed = canvas.toDataURL('image/jpeg', 0.85);
+      fileData = compressed.split(',')[1];
+      fileMediaType = 'image/jpeg';
+      document.getElementById('fileName').textContent = file.name;
+      document.getElementById('fileSize').textContent = (fileData.length * 0.75 / 1024).toFixed(0) + ' KB (compressed)';
+      document.getElementById('fileLoaded').style.display = 'flex';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function showError(msg) { const el = document.getElementById('errorMsg'); el.textContent = msg; el.style.display = 'block'; }
+function hideError() { document.getElementById('errorMsg').style.display = 'none'; }
+function setLoading(on) {
+  document.getElementById('gradeBtn').disabled = on;
+  document.getElementById('spinner').style.display = on ? 'flex' : 'none';
+  document.getElementById('gradeBtnText').textContent = on ? 'Grading...' : 'Grade Worksheet';
+}
+
+function parseJSON(text) {
+  let t = text.trim();
+  if (t.startsWith('```')) { t = t.replace(/^```json?/, '').replace(/```$/, '').trim(); }
+  return JSON.parse(t);
+}
+
+function saveApiKey() {
+  const val = document.getElementById('apiKeyInput').value.trim();
+  if (!val.startsWith('sk-ant-')) {
+    document.getElementById('modalError').style.display = 'block';
+    return;
+  }
+  localStorage.setItem('dts_api_key', val);
+  document.getElementById('apiModal').style.display = 'none';
+  showKeyBar(val);
+}
+
+function forgetKey() {
+  localStorage.removeItem('dts_api_key');
+  document.getElementById('keyBar').style.display = 'none';
+  document.getElementById('apiKeyInput').value = '';
+  document.getElementById('apiModal').style.display = 'flex';
+}
+
+function showKeyBar(key) {
+  const masked = key.slice(0, 10) + '••••••••' + key.slice(-4);
+  document.getElementById('keyBarText').textContent = 'API key: ' + masked;
+  document.getElementById('keyBar').style.display = 'flex';
+}
+
+// On load — check if key already saved
+window.addEventListener('load', () => {
+  const saved = localStorage.getItem('dts_api_key');
+  if (saved) {
+    showKeyBar(saved);
+  } else {
+    document.getElementById('apiModal').style.display = 'flex';
+  }
+});
+
+// Allow Enter key in modal
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('apiModal').style.display !== 'none') saveApiKey();
+});
+
+async function callClaude(messages, maxTokens=500) {
+  const apiKey = localStorage.getItem('dts_api_key');
+  if (!apiKey) { document.getElementById('apiModal').style.display = 'flex'; throw new Error('Please enter your API key.'); }
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-calls': 'true'
+    },
+    body: JSON.stringify({ model: 'claude-opus-4-5', max_tokens: maxTokens, messages })
+  });
+  if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || `API error ${res.status}`); }
+  return (await res.json()).content[0].text;
+}
+
+async function gradeWorksheet() {
+  hideError();
+  if (!fileData) { showError('Please upload a worksheet first.'); return; }
+  const rubricKey = document.querySelector('input[name="rubric"]:checked')?.value;
+  if (!rubricKey) { showError('Please select a rubric.'); return; }
+
+  const rubric = RUBRICS[rubricKey];
+  setLoading(true);
+  document.getElementById('results').style.display = 'none';
+
+  try {
+    const fileBlock = fileMediaType === 'application/pdf'
+      ? { type:'document', source:{ type:'base64', media_type:fileMediaType, data:fileData } }
+      : { type:'image', source:{ type:'base64', media_type:fileMediaType, data:fileData } };
+
+    const extractPrompt = `This is a student worksheet for the "${rubric.name}" financial literacy module.\n\nExtract:\n1. The answer letter (A-E) for each of the 3 MCQ questions. If blank, use "".\n2. The full verbatim text of the student's free-response answer.\n\nReturn ONLY a JSON object, no markdown:\n{"mcq": {"1": "A", "2": "B", "3": "C"}, "frq": "student free response text here"}`;
+
+    const extracted = parseJSON(await callClaude([
+      { role:'user', content:[fileBlock, { type:'text', text:extractPrompt }] }
+    ]));
+
+    const mcqResults = {};
+    let mcqScore = 0;
+    for (const [q, correct] of Object.entries(rubric.mcq)) {
+      const student = (extracted.mcq[q] || '').toUpperCase().trim();
+      const earned = student === correct ? 1 : 0;
+      mcqResults[q] = { student, correct, earned };
+      mcqScore += earned;
+    }
+
+    const frqPrompt = `You are grading a student's free-response answer for a financial literacy worksheet.\n\nMODULE: ${rubric.name}\n\nGRADING CRITERIA:\n${rubric.criteria}\n\nSTUDENT'S ANSWER:\n${extracted.frq}\n\nReturn ONLY a JSON object, no markdown:\n{"score": <integer 0 to ${rubric.frqMax}>, "feedback": "<1-3 sentences on what the student did well and what they missed>"}`;
+
+    const frqResult = parseJSON(await callClaude([{ role:'user', content:frqPrompt }], 400));
+
+    const totalScore = mcqScore + frqResult.score;
+    const totalMax = Object.keys(rubric.mcq).length + rubric.frqMax;
+    const pct = Math.round(totalScore / totalMax * 100);
+    const studentName = document.getElementById('studentName').value.trim() || 'Student';
+
+    document.getElementById('pctDisplay').textContent = pct + '%';
+    document.getElementById('studentDisplay').textContent = studentName;
+    document.getElementById('totalDisplay').textContent = `${totalScore} / ${totalMax} points · ${rubric.name}`;
+
+    const pill = document.getElementById('gradePill');
+    if (pct >= 85) { pill.textContent = 'Excellent'; pill.style.background = 'rgba(72,160,100,0.2)'; }
+    else if (pct >= 70) { pill.textContent = 'Good'; pill.style.background = 'rgba(184,134,11,0.2)'; }
+    else { pill.textContent = 'Needs work'; pill.style.background = 'rgba(139,46,46,0.2)'; }
+
+    document.getElementById('mcqScoreLabel').textContent = `Score: ${mcqScore} / ${Object.keys(rubric.mcq).length}`;
+    const mcqList = document.getElementById('mcqList');
+    mcqList.innerHTML = '';
+    for (const [q, r] of Object.entries(mcqResults)) {
+      const row = document.createElement('div');
+      row.className = 'mcq-row ' + (r.earned ? 'correct' : 'wrong');
+      row.innerHTML = `<span class="mcq-q">Q${q}</span><span class="mcq-ans">${r.student || '—'}</span><span class="mcq-status">${r.earned ? 'Correct' : 'Incorrect'}</span>${!r.earned ? `<span class="mcq-correct-ans">Correct: ${r.correct}</span>` : ''}`;
+      mcqList.appendChild(row);
+    }
+
+    document.getElementById('frqScoreNum').textContent = frqResult.score;
+    document.getElementById('frqScoreDenom').textContent = `/ ${rubric.frqMax} pts`;
+    document.getElementById('frqBar').style.width = (frqResult.score / rubric.frqMax * 100) + '%';
+    document.getElementById('frqFeedback').textContent = frqResult.feedback;
+
+    document.getElementById('results').style.display = 'block';
+    document.getElementById('results').scrollIntoView({ behavior:'smooth', block:'start' });
+
+  } catch (err) {
+    showError('Error: ' + err.message);
+  } finally {
+    setLoading(false);
+  }
+}
+</script>
+</body>
+</html>
