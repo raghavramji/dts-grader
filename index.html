@@ -3,43 +3,74 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DTS Worksheet Grader</title>
+<title>DTS Grader</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
   :root {
-    --ink: #0f0e0c; --ink-mid: #4a4843; --ink-muted: #9a9690;
-    --paper: #f5f2ec; --paper-warm: #ede9e0; --paper-dark: #e0dbd0;
-    --accent: #2d5a3d; --accent-light: #e8f0ea; --accent-mid: #4a7c5f;
-    --danger: #8b2e2e; --danger-light: #f5e8e8;
-    --border: rgba(15,14,12,0.12); --border-strong: rgba(15,14,12,0.22);
-    --radius: 4px; --radius-lg: 8px;
+    --ink:#0f0e0c; --ink-mid:#4a4843; --ink-muted:#9a9690;
+    --paper:#f5f2ec; --paper-warm:#ede9e0; --paper-dark:#e0dbd0;
+    --accent:#2d5a3d; --accent-light:#e8f0ea; --accent-mid:#4a7c5f;
+    --danger:#8b2e2e; --danger-light:#f5e8e8;
+    --gold:#b8860b; --gold-light:#fdf6dc;
+    --border:rgba(15,14,12,0.12); --border-strong:rgba(15,14,12,0.22);
+    --radius:4px; --radius-lg:8px;
   }
-  body { font-family: 'DM Mono', monospace; background: var(--paper); color: var(--ink); font-size: 13px; line-height: 1.6; }
-  .page { max-width: 700px; margin: 0 auto; padding: 28px 20px 60px; }
-  .site-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:28px; padding-bottom:16px; border-bottom:1px solid var(--border-strong); }
-  .logo-block h1 { font-family:'Fraunces',serif; font-size:22px; font-weight:600; letter-spacing:-0.5px; }
+  body { font-family:'DM Mono',monospace; background:var(--paper); color:var(--ink); min-height:100vh; font-size:13px; line-height:1.6; }
+  body::before { content:''; position:fixed; inset:0; background-image:linear-gradient(rgba(15,14,12,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(15,14,12,0.03) 1px,transparent 1px); background-size:32px 32px; pointer-events:none; z-index:0; }
+  .page { position:relative; z-index:1; max-width:860px; margin:0 auto; padding:32px 20px 80px; }
+
+  /* Header */
+  .site-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:0; padding-bottom:20px; border-bottom:1px solid var(--border-strong); }
+  .logo-block h1 { font-family:'Fraunces',serif; font-size:24px; font-weight:600; letter-spacing:-0.5px; }
   .logo-block p { font-size:11px; color:var(--ink-muted); margin-top:2px; letter-spacing:0.04em; text-transform:uppercase; }
   .badge { font-size:10px; background:var(--accent-light); color:var(--accent); border:1px solid rgba(45,90,61,0.2); border-radius:99px; padding:3px 10px; font-weight:500; }
-  .api-row { display:flex; gap:8px; align-items:center; margin-bottom:20px; background:var(--paper-warm); border:1px solid var(--border-strong); border-radius:var(--radius-lg); padding:12px 16px; }
-  .api-row label { font-size:10px; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-mid); white-space:nowrap; font-weight:500; }
-  .api-row input { flex:1; background:white; border:1px solid var(--border-strong); border-radius:var(--radius); padding:6px 10px; font-family:'DM Mono',monospace; font-size:12px; color:var(--ink); outline:none; }
-  .api-row input:focus { border-color:var(--accent-mid); }
-  .api-row input::placeholder { color:var(--ink-muted); }
+
+  /* API key modal */
+  .modal-overlay { position:fixed; inset:0; background:rgba(15,14,12,0.55); z-index:100; display:flex; align-items:center; justify-content:center; padding:20px; }
+  .modal { background:white; border-radius:var(--radius-lg); padding:28px; max-width:420px; width:100%; box-shadow:0 8px 32px rgba(0,0,0,0.18); }
+  .modal h2 { font-family:'Fraunces',serif; font-size:20px; font-weight:600; margin-bottom:6px; }
+  .modal p { font-size:12px; color:var(--ink-mid); line-height:1.6; margin-bottom:16px; }
+  .modal a { color:var(--accent); text-decoration:underline; }
+  .modal input { width:100%; background:var(--paper); border:1px solid var(--border-strong); border-radius:var(--radius); padding:10px 12px; font-family:'DM Mono',monospace; font-size:13px; color:var(--ink); outline:none; margin-bottom:10px; }
+  .modal input:focus { border-color:var(--accent-mid); }
+  .modal input::placeholder { color:var(--ink-muted); }
+  .modal-save-btn { width:100%; padding:11px; background:var(--ink); color:white; border:none; border-radius:var(--radius); font-family:'DM Mono',monospace; font-size:13px; font-weight:500; cursor:pointer; letter-spacing:0.05em; text-transform:uppercase; transition:background 0.15s; }
+  .modal-save-btn:hover { background:var(--accent); }
+  .modal-error { font-size:11px; color:var(--danger); margin-bottom:8px; display:none; }
+  .key-bar { display:flex; align-items:center; gap:10px; padding:10px 14px; background:var(--accent-light); border:1px solid rgba(45,90,61,0.2); border-radius:var(--radius-lg); margin-bottom:20px; }
+  .key-bar-dot { width:7px; height:7px; border-radius:50%; background:var(--accent); flex-shrink:0; }
+  .key-bar-text { font-size:11px; color:var(--accent); flex:1; }
+  .key-bar-btn { font-size:11px; color:var(--ink-muted); background:none; border:none; cursor:pointer; padding:2px 6px; border-radius:3px; font-family:'DM Mono',monospace; }
+  .key-bar-btn:hover { background:var(--paper-dark); color:var(--ink); }
+
+  /* Tabs */
+  .tab-bar { display:flex; gap:2px; margin:20px 0; background:var(--paper-warm); border:1px solid var(--border-strong); border-radius:var(--radius-lg); padding:4px; width:fit-content; }
+  .tab-btn { padding:7px 20px; border-radius:6px; border:none; background:none; font-family:'DM Mono',monospace; font-size:12px; font-weight:500; color:var(--ink-muted); cursor:pointer; transition:all 0.15s; letter-spacing:0.03em; }
+  .tab-btn.active { background:white; color:var(--ink); box-shadow:0 1px 3px rgba(0,0,0,0.08); }
+  .tab-btn:hover:not(.active) { color:var(--ink); }
+  .tab-content { display:none; }
+  .tab-content.active { display:block; }
+
+  /* Cards */
   .card { background:white; border:1px solid var(--border-strong); border-radius:var(--radius-lg); overflow:hidden; margin-bottom:16px; box-shadow:0 1px 3px rgba(0,0,0,0.05); }
-  .card-header { padding:12px 18px; border-bottom:1px solid var(--border); background:var(--paper-warm); display:flex; align-items:center; gap:8px; }
+  .card-header { padding:14px 20px; border-bottom:1px solid var(--border); background:var(--paper-warm); display:flex; align-items:center; gap:8px; }
   .step { width:20px; height:20px; border-radius:50%; background:var(--ink); color:white; font-size:10px; font-weight:500; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-  .card-header h2 { font-family:'Fraunces',serif; font-size:14px; font-weight:600; }
-  .card-body { padding:16px 18px; }
-  .drop-zone { border:1.5px dashed var(--border-strong); border-radius:var(--radius-lg); padding:28px 16px; text-align:center; cursor:pointer; transition:all 0.15s; background:var(--paper); position:relative; }
+  .card-header h2 { font-family:'Fraunces',serif; font-size:15px; font-weight:600; }
+  .card-body { padding:18px 20px; }
+
+  /* Drop zone */
+  .drop-zone { border:1.5px dashed var(--border-strong); border-radius:var(--radius-lg); padding:36px 20px; text-align:center; cursor:pointer; transition:all 0.15s; background:var(--paper); position:relative; }
   .drop-zone:hover,.drop-zone.drag-over { border-color:var(--accent-mid); background:var(--accent-light); }
   .drop-zone input[type="file"] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
-  .drop-zone h3 { font-family:'Fraunces',serif; font-size:15px; font-weight:300; font-style:italic; margin-bottom:4px; }
+  .drop-zone h3 { font-family:'Fraunces',serif; font-size:16px; font-weight:300; font-style:italic; margin-bottom:4px; }
   .drop-zone p { font-size:11px; color:var(--ink-muted); text-transform:uppercase; letter-spacing:0.06em; }
   .file-loaded { display:flex; align-items:center; gap:10px; padding:10px 12px; background:var(--accent-light); border:1px solid rgba(45,90,61,0.2); border-radius:var(--radius); margin-top:12px; }
   .file-loaded svg { flex-shrink:0; color:var(--accent); }
   .file-name { font-size:12px; font-weight:500; color:var(--accent); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .file-size { font-size:10px; color:var(--accent-mid); }
+
+  /* Rubric grid */
   .select-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:6px; }
   .rubric-option { position:relative; }
   .rubric-option input[type="radio"] { position:absolute; opacity:0; width:0; height:0; }
@@ -48,24 +79,32 @@
   .rubric-option input:checked + label { background:var(--ink); border-color:var(--ink); color:white; }
   .rubric-key { display:block; font-size:14px; font-weight:500; margin-bottom:1px; }
   .rubric-name { display:block; font-size:9px; opacity:0.65; letter-spacing:0.04em; text-transform:uppercase; }
+
+  /* Fields */
   .field-row { display:flex; flex-direction:column; gap:5px; }
   .field-row label { font-size:10px; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-mid); font-weight:500; }
-  .field-row input[type="text"] { background:var(--paper); border:1px solid var(--border-strong); border-radius:var(--radius); padding:8px 12px; font-family:'DM Mono',monospace; font-size:13px; color:var(--ink); outline:none; }
+  .field-row input[type="text"] { background:var(--paper); border:1px solid var(--border-strong); border-radius:var(--radius); padding:9px 12px; font-family:'DM Mono',monospace; font-size:13px; color:var(--ink); outline:none; }
   .field-row input:focus { border-color:var(--accent-mid); }
   .field-row input::placeholder { color:var(--ink-muted); }
+
+  /* Buttons */
   .grade-btn { width:100%; padding:12px 20px; background:var(--ink); color:white; border:none; border-radius:var(--radius-lg); font-family:'DM Mono',monospace; font-size:13px; font-weight:500; letter-spacing:0.06em; text-transform:uppercase; cursor:pointer; transition:all 0.15s; display:flex; align-items:center; justify-content:center; gap:8px; }
-  .grade-btn:hover:not(:disabled) { background:var(--accent); }
-  .grade-btn:disabled { opacity:0.4; cursor:not-allowed; }
+  .grade-btn:hover:not(:disabled) { background:var(--accent); transform:translateY(-1px); box-shadow:0 4px 12px rgba(45,90,61,0.2); }
+  .grade-btn:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
+  .btn-sm { padding:6px 14px; border-radius:var(--radius); font-family:'DM Mono',monospace; font-size:11px; font-weight:500; cursor:pointer; letter-spacing:0.04em; text-transform:uppercase; border:1px solid var(--border-strong); background:var(--paper); color:var(--ink); transition:all 0.12s; display:inline-flex; align-items:center; gap:5px; }
+  .btn-sm:hover { background:var(--paper-dark); }
   .spinner { width:14px; height:14px; border:2px solid rgba(255,255,255,0.3); border-top-color:white; border-radius:50%; animation:spin 0.7s linear infinite; display:none; flex-shrink:0; }
   @keyframes spin { to { transform:rotate(360deg); } }
-  #results { display:none; }
-  .score-banner { background:var(--ink); color:white; padding:20px 24px; border-radius:var(--radius-lg); margin-bottom:16px; display:flex; align-items:center; gap:20px; }
-  .score-circle { width:68px; height:68px; border-radius:50%; border:2px solid rgba(255,255,255,0.2); display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0; }
-  .score-pct { font-family:'Fraunces',serif; font-size:22px; font-weight:600; line-height:1; }
+
+  /* Grader results */
+  #results { display:none; margin-top:20px; }
+  .score-banner { background:var(--ink); color:white; padding:22px 28px; border-radius:var(--radius-lg); margin-bottom:16px; display:flex; align-items:center; gap:20px; }
+  .score-circle { width:72px; height:72px; border-radius:50%; border:2px solid rgba(255,255,255,0.2); display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0; }
+  .score-pct { font-family:'Fraunces',serif; font-size:24px; font-weight:600; line-height:1; }
   .score-pct-label { font-size:9px; opacity:0.6; text-transform:uppercase; letter-spacing:0.06em; }
-  .score-details h3 { font-family:'Fraunces',serif; font-size:17px; font-weight:300; font-style:italic; margin-bottom:3px; }
+  .score-details h3 { font-family:'Fraunces',serif; font-size:18px; font-weight:300; font-style:italic; margin-bottom:3px; }
   .score-sub { font-size:11px; opacity:0.65; }
-  .score-pill { margin-left:auto; padding:5px 12px; border-radius:99px; font-size:11px; font-weight:500; border:1px solid rgba(255,255,255,0.3); text-transform:uppercase; letter-spacing:0.05em; flex-shrink:0; }
+  .score-pill { margin-left:auto; padding:5px 14px; border-radius:99px; font-size:11px; font-weight:500; border:1px solid rgba(255,255,255,0.3); text-transform:uppercase; flex-shrink:0; }
   .section-label { font-size:10px; text-transform:uppercase; letter-spacing:0.1em; color:var(--ink-muted); font-weight:500; margin-bottom:10px; padding-bottom:6px; border-bottom:1px solid var(--border); }
   .mcq-list { display:flex; flex-direction:column; gap:6px; }
   .mcq-row { display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:var(--radius); border:1px solid var(--border); background:var(--paper); }
@@ -79,36 +118,57 @@
   .mcq-row.correct .mcq-status { color:var(--accent); }
   .mcq-row.wrong .mcq-status { color:var(--danger); }
   .mcq-correct-ans { margin-left:auto; font-size:10px; color:var(--ink-muted); }
-  .frq-result { background:var(--paper-warm); border:1px solid var(--border-strong); border-radius:var(--radius-lg); padding:16px 18px; }
+  .frq-result { background:var(--paper-warm); border:1px solid var(--border-strong); border-radius:var(--radius-lg); padding:16px 20px; }
   .frq-score-row { display:flex; align-items:baseline; gap:6px; margin-bottom:10px; }
-  .frq-score-num { font-family:'Fraunces',serif; font-size:30px; font-weight:600; color:var(--ink); line-height:1; }
+  .frq-score-num { font-family:'Fraunces',serif; font-size:32px; font-weight:600; color:var(--ink); line-height:1; }
   .frq-score-denom { font-size:15px; color:var(--ink-muted); }
   .frq-bar-track { height:4px; background:var(--paper-dark); border-radius:2px; margin-bottom:12px; overflow:hidden; }
   .frq-bar-fill { height:100%; border-radius:2px; background:var(--accent); transition:width 0.6s ease; }
   .frq-feedback { font-size:12px; color:var(--ink-mid); line-height:1.7; padding-top:10px; border-top:1px solid var(--border); }
   .error-msg { background:var(--danger-light); border:1px solid rgba(139,46,46,0.2); border-radius:var(--radius); padding:10px 14px; font-size:12px; color:var(--danger); display:none; margin-bottom:12px; }
-  /* API key modal */
-  .modal-overlay { position:fixed; inset:0; background:rgba(15,14,12,0.55); z-index:100; display:flex; align-items:center; justify-content:center; padding:20px; }
-  .modal { background:white; border-radius:var(--radius-lg); padding:28px; max-width:420px; width:100%; box-shadow:0 8px 32px rgba(0,0,0,0.18); }
-  .modal h2 { font-family:'Fraunces',serif; font-size:20px; font-weight:600; margin-bottom:6px; }
-  .modal p { font-size:12px; color:var(--ink-mid); line-height:1.6; margin-bottom:16px; }
-  .modal a { color:var(--accent); text-decoration:underline; }
-  .modal input { width:100%; background:var(--paper); border:1px solid var(--border-strong); border-radius:var(--radius); padding:10px 12px; font-family:'DM Mono',monospace; font-size:13px; color:var(--ink); outline:none; margin-bottom:10px; }
-  .modal input:focus { border-color:var(--accent-mid); }
-  .modal input::placeholder { color:var(--ink-muted); }
-  .modal-save-btn { width:100%; padding:11px; background:var(--ink); color:white; border:none; border-radius:var(--radius); font-family:'DM Mono',monospace; font-size:13px; font-weight:500; cursor:pointer; letter-spacing:0.05em; text-transform:uppercase; transition:background 0.15s; }
-  .modal-save-btn:hover { background:var(--accent); }
-  .modal-error { font-size:11px; color:var(--danger); margin-bottom:8px; display:none; }
-  /* Key status bar */
-  .key-bar { display:flex; align-items:center; gap:10px; padding:10px 14px; background:var(--accent-light); border:1px solid rgba(45,90,61,0.2); border-radius:var(--radius-lg); margin-bottom:20px; }
-  .key-bar-dot { width:7px; height:7px; border-radius:50%; background:var(--accent); flex-shrink:0; }
-  .key-bar-text { font-size:11px; color:var(--accent); flex:1; }
-  .key-bar-btn { font-size:11px; color:var(--ink-muted); background:none; border:none; cursor:pointer; padding:2px 6px; border-radius:3px; font-family:'DM Mono',monospace; }
-  .key-bar-btn:hover { background:var(--paper-dark); color:var(--ink); }
+
+  /* Gradebook */
+  .gb-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+  .gb-header h2 { font-family:'Fraunces',serif; font-size:18px; font-weight:600; }
+  .stats-row { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:10px; margin-bottom:20px; }
+  .stat-card { background:white; border:1px solid var(--border-strong); border-radius:var(--radius-lg); padding:14px 16px; }
+  .stat-label { font-size:10px; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-muted); margin-bottom:3px; }
+  .stat-value { font-family:'Fraunces',serif; font-size:26px; font-weight:600; }
+  .stat-sub { font-size:10px; color:var(--ink-muted); }
+  .filter-row { display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
+  .filter-row input, .filter-row select { background:white; border:1px solid var(--border-strong); border-radius:var(--radius); padding:7px 10px; font-family:'DM Mono',monospace; font-size:12px; color:var(--ink); outline:none; }
+  .filter-row input:focus, .filter-row select:focus { border-color:var(--accent-mid); }
+  .filter-row input { flex:1; min-width:160px; }
+  .table-wrap { background:white; border:1px solid var(--border-strong); border-radius:var(--radius-lg); overflow:hidden; }
+  table { width:100%; border-collapse:collapse; }
+  thead { background:var(--paper-warm); }
+  th { padding:9px 12px; text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-muted); font-weight:500; border-bottom:1px solid var(--border-strong); white-space:nowrap; }
+  td { padding:9px 12px; border-bottom:1px solid var(--border); font-size:12px; vertical-align:middle; }
+  tr:last-child td { border-bottom:none; }
+  tr:hover td { background:var(--paper); }
+  .student-link { font-weight:500; cursor:pointer; text-decoration:underline dotted; }
+  .pct-badge { display:inline-block; padding:2px 8px; border-radius:99px; font-size:10px; font-weight:500; }
+  .pct-high { background:var(--accent-light); color:var(--accent); }
+  .pct-mid { background:var(--gold-light); color:var(--gold); }
+  .pct-low { background:var(--danger-light); color:var(--danger); }
+  .del-btn { background:none; border:none; cursor:pointer; color:var(--ink-muted); font-size:14px; padding:2px 6px; border-radius:3px; }
+  .del-btn:hover { background:var(--danger-light); color:var(--danger); }
+  .feedback-cell { max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--ink-mid); font-size:11px; }
+  .empty-state { padding:40px; text-align:center; color:var(--ink-muted); font-size:12px; }
+  .student-panel { display:none; background:white; border:1px solid var(--border-strong); border-radius:var(--radius-lg); padding:18px 20px; margin-bottom:16px; }
+  .student-panel h3 { font-family:'Fraunces',serif; font-size:16px; font-weight:600; margin-bottom:2px; }
+  .panel-sub { font-size:11px; color:var(--ink-muted); margin-bottom:14px; }
+  .module-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:8px; }
+  .module-tile { background:var(--paper-warm); border:1px solid var(--border); border-radius:var(--radius); padding:10px 12px; }
+  .mod-key { font-size:12px; font-weight:500; }
+  .mod-score { font-family:'Fraunces',serif; font-size:18px; font-weight:600; }
+  .close-panel { float:right; background:none; border:none; cursor:pointer; font-size:18px; color:var(--ink-muted); line-height:1; }
 </style>
 </head>
 <body>
 <div class="page">
+
+  <!-- Header -->
   <header class="site-header">
     <div class="logo-block">
       <h1>DTS Grader</h1>
@@ -118,118 +178,195 @@
   </header>
 
   <!-- API Key Modal -->
-  <div class="modal-overlay" id="apiModal">
+  <div class="modal-overlay" id="apiModal" style="display:none">
     <div class="modal">
       <h2>Enter your API key</h2>
       <p>This tool uses the <a href="https://www.anthropic.com" target="_blank">Anthropic Claude API</a> to read and grade worksheets. Your key is saved only in your browser and never sent to anyone else.<br><br>Get a key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys.</p>
       <input type="password" id="apiKeyInput" placeholder="sk-ant-..." autocomplete="off">
-      <div class="modal-error" id="modalError">Please enter a valid API key (starts with sk-ant-).</div>
-      <button class="modal-save-btn" onclick="saveApiKey()">Save & Continue</button>
+      <div class="modal-error" id="modalError">Please enter a valid key (starts with sk-ant-).</div>
+      <button class="modal-save-btn" onclick="saveApiKey()">Save and continue</button>
     </div>
   </div>
 
-  <!-- Key status bar (shown after key is set) -->
+  <!-- Key status bar -->
   <div class="key-bar" id="keyBar" style="display:none">
     <div class="key-bar-dot"></div>
-    <span class="key-bar-text" id="keyBarText">API key saved</span>
+    <span class="key-bar-text" id="keyBarText"></span>
     <button class="key-bar-btn" onclick="forgetKey()">Change key</button>
   </div>
 
-  <div class="card">
-    <div class="card-header"><div class="step">1</div><h2>Upload student worksheet</h2></div>
-    <div class="card-body">
-      <div class="drop-zone" id="dropZone">
-        <input type="file" id="fileInput" accept=".pdf,image/*">
-        <svg width="36" height="36" viewBox="0 0 44 44" fill="none" style="margin:0 auto 10px;opacity:0.35;display:block">
-          <rect x="8" y="4" width="22" height="32" rx="2" stroke="currentColor" stroke-width="1.5"/>
-          <path d="M24 4v8h6" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-          <path d="M22 24v8M18 28l4-4 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <h3>Drop PDF or image here</h3>
-        <p>PDF · JPG · PNG</p>
-      </div>
-      <div class="file-loaded" id="fileLoaded" style="display:none">
-        <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M4 4h8l4 4v8a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1z" stroke="currentColor" stroke-width="1.5"/><path d="M12 4v4h4" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
-        <span class="file-name" id="fileName"></span>
-        <span class="file-size" id="fileSize"></span>
-      </div>
-    </div>
+  <!-- Tabs -->
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('grader', this)">Grader</button>
+    <button class="tab-btn" onclick="switchTab('gradebook', this)">Gradebook</button>
   </div>
 
-  <div class="card">
-    <div class="card-header"><div class="step">2</div><h2>Select rubric</h2></div>
-    <div class="card-body">
-      <div class="select-grid">
-        <div class="rubric-option"><input type="radio" name="rubric" id="r-G1" value="G1"><label for="r-G1"><span class="rubric-key">G1</span><span class="rubric-name">Saving</span></label></div>
-        <div class="rubric-option"><input type="radio" name="rubric" id="r-G2" value="G2"><label for="r-G2"><span class="rubric-key">G2</span><span class="rubric-name">Interest</span></label></div>
-        <div class="rubric-option"><input type="radio" name="rubric" id="r-G3" value="G3"><label for="r-G3"><span class="rubric-key">G3</span><span class="rubric-name">Investing</span></label></div>
-        <div class="rubric-option"><input type="radio" name="rubric" id="r-W1" value="W1"><label for="r-W1"><span class="rubric-key">W1</span><span class="rubric-name">Spending</span></label></div>
-        <div class="rubric-option"><input type="radio" name="rubric" id="r-W2" value="W2"><label for="r-W2"><span class="rubric-key">W2</span><span class="rubric-name">Credit</span></label></div>
-        <div class="rubric-option"><input type="radio" name="rubric" id="r-W3" value="W3"><label for="r-W3"><span class="rubric-key">W3</span><span class="rubric-name">Debt</span></label></div>
-        <div class="rubric-option"><input type="radio" name="rubric" id="r-O1" value="O1"><label for="r-O1"><span class="rubric-key">O1</span><span class="rubric-name">Employment</span></label></div>
-        <div class="rubric-option"><input type="radio" name="rubric" id="r-O2" value="O2"><label for="r-O2"><span class="rubric-key">O2</span><span class="rubric-name">Income</span></label></div>
-        <div class="rubric-option"><input type="radio" name="rubric" id="r-H1" value="H1"><label for="r-H1"><span class="rubric-key">H1</span><span class="rubric-name">Bank Account</span></label></div>
-        <div class="rubric-option"><input type="radio" name="rubric" id="r-H2" value="H2"><label for="r-H2"><span class="rubric-key">H2</span><span class="rubric-name">SMART Goals</span></label></div>
-        <div class="rubric-option"><input type="radio" name="rubric" id="r-R1" value="R1"><label for="r-R1"><span class="rubric-key">R1</span><span class="rubric-name">Risk</span></label></div>
-        <div class="rubric-option"><input type="radio" name="rubric" id="r-T1" value="T1"><label for="r-T1"><span class="rubric-key">T1</span><span class="rubric-name">Tax</span></label></div>
-      </div>
-    </div>
-  </div>
+  <!-- ═══ TAB: GRADER ═══ -->
+  <div class="tab-content active" id="tab-grader">
 
-  <div class="card">
-    <div class="card-header"><div class="step">3</div><h2>Student name <span style="font-weight:300;font-size:12px;color:var(--ink-muted)">(optional)</span></h2></div>
-    <div class="card-body">
-      <div class="field-row">
-        <label for="studentName">Full name</label>
-        <input type="text" id="studentName" placeholder="e.g. Jane Doe">
-      </div>
-    </div>
-  </div>
-
-  <div class="error-msg" id="errorMsg"></div>
-
-  <button class="grade-btn" id="gradeBtn" onclick="gradeWorksheet()">
-    <div class="spinner" id="spinner"></div>
-    <span id="gradeBtnText">Grade Worksheet</span>
-  </button>
-
-  <div id="results">
-    <div style="height:24px"></div>
-    <div class="score-banner">
-      <div class="score-circle">
-        <span class="score-pct" id="pctDisplay">—</span>
-        <span class="score-pct-label">score</span>
-      </div>
-      <div class="score-details">
-        <h3 id="studentDisplay">Student</h3>
-        <div class="score-sub" id="totalDisplay"></div>
-      </div>
-      <div class="score-pill" id="gradePill"></div>
-    </div>
     <div class="card">
-      <div class="card-header"><div class="step" style="background:var(--accent)">✓</div><h2>MCQ results</h2></div>
+      <div class="card-header"><div class="step">1</div><h2>Upload student worksheet</h2></div>
       <div class="card-body">
-        <div class="section-label" id="mcqScoreLabel"></div>
-        <div class="mcq-list" id="mcqList"></div>
+        <div class="drop-zone" id="dropZone">
+          <input type="file" id="fileInput" accept=".pdf,image/*">
+          <svg width="36" height="36" viewBox="0 0 44 44" fill="none" style="margin:0 auto 10px;opacity:0.3;display:block">
+            <rect x="8" y="4" width="22" height="32" rx="2" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M24 4v8h6" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+            <path d="M22 24v8M18 28l4-4 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <h3>Drop PDF or image here</h3>
+          <p>PDF · JPG · PNG</p>
+        </div>
+        <div class="file-loaded" id="fileLoaded" style="display:none">
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M4 4h8l4 4v8a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1z" stroke="currentColor" stroke-width="1.5"/><path d="M12 4v4h4" stroke="currentColor" stroke-width="1.5"/></svg>
+          <span class="file-name" id="fileName"></span>
+          <span class="file-size" id="fileSize"></span>
+        </div>
       </div>
     </div>
+
     <div class="card">
-      <div class="card-header"><div class="step" style="background:var(--accent)">✓</div><h2>Free response</h2></div>
+      <div class="card-header"><div class="step">2</div><h2>Select rubric</h2></div>
       <div class="card-body">
-        <div class="frq-result">
-          <div class="frq-score-row">
-            <span class="frq-score-num" id="frqScoreNum">—</span>
-            <span class="frq-score-denom" id="frqScoreDenom"></span>
+        <div class="select-grid">
+          <div class="rubric-option"><input type="radio" name="rubric" id="r-G1" value="G1"><label for="r-G1"><span class="rubric-key">G1</span><span class="rubric-name">Saving</span></label></div>
+          <div class="rubric-option"><input type="radio" name="rubric" id="r-G2" value="G2"><label for="r-G2"><span class="rubric-key">G2</span><span class="rubric-name">Interest</span></label></div>
+          <div class="rubric-option"><input type="radio" name="rubric" id="r-G3" value="G3"><label for="r-G3"><span class="rubric-key">G3</span><span class="rubric-name">Investing</span></label></div>
+          <div class="rubric-option"><input type="radio" name="rubric" id="r-W1" value="W1"><label for="r-W1"><span class="rubric-key">W1</span><span class="rubric-name">Spending</span></label></div>
+          <div class="rubric-option"><input type="radio" name="rubric" id="r-W2" value="W2"><label for="r-W2"><span class="rubric-key">W2</span><span class="rubric-name">Credit</span></label></div>
+          <div class="rubric-option"><input type="radio" name="rubric" id="r-W3" value="W3"><label for="r-W3"><span class="rubric-key">W3</span><span class="rubric-name">Debt</span></label></div>
+          <div class="rubric-option"><input type="radio" name="rubric" id="r-O1" value="O1"><label for="r-O1"><span class="rubric-key">O1</span><span class="rubric-name">Employment</span></label></div>
+          <div class="rubric-option"><input type="radio" name="rubric" id="r-O2" value="O2"><label for="r-O2"><span class="rubric-key">O2</span><span class="rubric-name">Income</span></label></div>
+          <div class="rubric-option"><input type="radio" name="rubric" id="r-H1" value="H1"><label for="r-H1"><span class="rubric-key">H1</span><span class="rubric-name">Bank Account</span></label></div>
+          <div class="rubric-option"><input type="radio" name="rubric" id="r-H2" value="H2"><label for="r-H2"><span class="rubric-key">H2</span><span class="rubric-name">SMART Goals</span></label></div>
+          <div class="rubric-option"><input type="radio" name="rubric" id="r-R1" value="R1"><label for="r-R1"><span class="rubric-key">R1</span><span class="rubric-name">Risk</span></label></div>
+          <div class="rubric-option"><input type="radio" name="rubric" id="r-T1" value="T1"><label for="r-T1"><span class="rubric-key">T1</span><span class="rubric-name">Tax</span></label></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="step">3</div><h2>Student name <span style="font-weight:300;font-size:12px;color:var(--ink-muted)">(optional)</span></h2></div>
+      <div class="card-body">
+        <div class="field-row">
+          <label for="studentName">Full name</label>
+          <input type="text" id="studentName" placeholder="e.g. Jane Doe">
+        </div>
+      </div>
+    </div>
+
+    <div class="error-msg" id="errorMsg"></div>
+
+    <button class="grade-btn" id="gradeBtn" onclick="gradeWorksheet()">
+      <div class="spinner" id="spinner"></div>
+      <span id="gradeBtnText">Grade Worksheet</span>
+    </button>
+
+    <div id="results">
+      <div class="score-banner">
+        <div class="score-circle">
+          <span class="score-pct" id="pctDisplay">—</span>
+          <span class="score-pct-label">score</span>
+        </div>
+        <div class="score-details">
+          <h3 id="studentDisplay"></h3>
+          <div class="score-sub" id="totalDisplay"></div>
+        </div>
+        <div class="score-pill" id="gradePill"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="step" style="background:var(--accent)">✓</div><h2>MCQ results</h2></div>
+        <div class="card-body">
+          <div class="section-label" id="mcqScoreLabel"></div>
+          <div class="mcq-list" id="mcqList"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="step" style="background:var(--accent)">✓</div><h2>Free response</h2></div>
+        <div class="card-body">
+          <div class="frq-result">
+            <div class="frq-score-row">
+              <span class="frq-score-num" id="frqScoreNum">—</span>
+              <span class="frq-score-denom" id="frqScoreDenom"></span>
+            </div>
+            <div class="frq-bar-track"><div class="frq-bar-fill" id="frqBar" style="width:0%"></div></div>
+            <div class="frq-feedback" id="frqFeedback"></div>
           </div>
-          <div class="frq-bar-track"><div class="frq-bar-fill" id="frqBar" style="width:0%"></div></div>
-          <div class="frq-feedback" id="frqFeedback"></div>
         </div>
       </div>
     </div>
   </div>
-</div>
+
+  <!-- ═══ TAB: GRADEBOOK ═══ -->
+  <div class="tab-content" id="tab-gradebook">
+    <div class="gb-header">
+      <h2>Gradebook</h2>
+      <div style="display:flex;gap:8px">
+        <button class="btn-sm" onclick="exportCSV()">Export CSV</button>
+        <button class="btn-sm" onclick="clearAll()">Clear all</button>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-label">Submissions</div><div class="stat-value" id="statTotal">0</div></div>
+      <div class="stat-card"><div class="stat-label">Students</div><div class="stat-value" id="statStudents">0</div></div>
+      <div class="stat-card"><div class="stat-label">Avg score</div><div class="stat-value" id="statAvg">—</div><div class="stat-sub">all modules</div></div>
+      <div class="stat-card"><div class="stat-label">Top module</div><div class="stat-value" id="statTop">—</div><div class="stat-sub" id="statTopSub"></div></div>
+    </div>
+
+    <div class="student-panel" id="studentPanel">
+      <button class="close-panel" onclick="closePanel()">×</button>
+      <h3 id="panelName"></h3>
+      <div class="panel-sub" id="panelSub"></div>
+      <div class="module-grid" id="panelModules"></div>
+    </div>
+
+    <div class="filter-row">
+      <input type="text" id="gbSearch" placeholder="Search student..." oninput="renderTable()">
+      <select id="gbMod" onchange="renderTable()">
+        <option value="">All modules</option>
+        <option value="G1">G1 — Saving</option>
+        <option value="G2">G2 — Interest</option>
+        <option value="G3">G3 — Investing</option>
+        <option value="W1">W1 — Spending</option>
+        <option value="W2">W2 — Credit</option>
+        <option value="W3">W3 — Debt</option>
+        <option value="O1">O1 — Employment</option>
+        <option value="O2">O2 — Income</option>
+        <option value="H1">H1 — Bank Account</option>
+        <option value="H2">H2 — SMART Goals</option>
+        <option value="R1">R1 — Risk</option>
+        <option value="T1">T1 — Tax</option>
+      </select>
+      <select id="gbSort" onchange="renderTable()">
+        <option value="date_desc">Newest first</option>
+        <option value="date_asc">Oldest first</option>
+        <option value="name_asc">Name A–Z</option>
+        <option value="pct_desc">Highest score</option>
+        <option value="pct_asc">Lowest score</option>
+      </select>
+    </div>
+
+    <div class="table-wrap">
+      <table id="gradesTable" style="display:none">
+        <thead>
+          <tr>
+            <th>Student</th><th>Module</th><th>MCQ</th><th>FRQ</th>
+            <th>Total</th><th>Score</th><th>Feedback</th><th>Date</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="gradesBody"></tbody>
+      </table>
+      <div class="empty-state" id="gbEmpty">No grades yet. Grade a worksheet to get started.</div>
+    </div>
+  </div>
+
+</div><!-- /page -->
 
 <script>
+// ═══════════════════════════════════════════
+// RUBRICS
+// ═══════════════════════════════════════════
 const RUBRICS = {
   G1:{name:"Saving — G1",mcq:{"1":"C","2":"D","3":"B"},frqMax:3,criteria:`Score 0 if the student only restates the problem without a direct answer.\nAward 1 point each (max 3) for:\n  1. States a clear and reasonable savings percentage (e.g., 10%, 25%)\n  2. Provides a logical, financially sound reason for saving that percentage\n  3. Lists three specific and plausible saving goals (e.g., college, car, travel)`},
   G2:{name:"Interest — G2",mcq:{"1":"B","2":"D","3":"E"},frqMax:2,criteria:`Score 0 if the student only restates the problem without a direct answer.\nAward 1 point each (max 2) for:\n  1. Identifies a correct financial principle such as compound interest, long-term growth, or more time for money to accumulate\n  2. Provides a clear, logically reasoned explanation of how early saving increases value over time`},
@@ -245,6 +382,53 @@ const RUBRICS = {
   T1:{name:"Tax — T1",mcq:{"1":"B","2":"D","3":"C"},frqMax:2,criteria:`Score 0 if the student only restates the problem without a direct answer.\nAward 1 point each (max 2) for:\n  1. Identifies a valid reason why understanding taxes matters (e.g., taxes reduce take-home income)\n  2. Provides a clear, specific, financially accurate explanation of how taxes impact budgeting, income, or savings`},
 };
 
+// ═══════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'gradebook') renderTable();
+}
+
+// ═══════════════════════════════════════════
+// API KEY
+// ═══════════════════════════════════════════
+function saveApiKey() {
+  const val = document.getElementById('apiKeyInput').value.trim();
+  if (!val.startsWith('sk-ant-')) { document.getElementById('modalError').style.display = 'block'; return; }
+  localStorage.setItem('dts_api_key', val);
+  document.getElementById('apiModal').style.display = 'none';
+  showKeyBar(val);
+}
+
+function forgetKey() {
+  localStorage.removeItem('dts_api_key');
+  document.getElementById('keyBar').style.display = 'none';
+  document.getElementById('apiKeyInput').value = '';
+  document.getElementById('apiModal').style.display = 'flex';
+}
+
+function showKeyBar(key) {
+  document.getElementById('keyBarText').textContent = 'API key: ' + key.slice(0,10) + '••••••••' + key.slice(-4);
+  document.getElementById('keyBar').style.display = 'flex';
+}
+
+window.addEventListener('load', () => {
+  const saved = localStorage.getItem('dts_api_key');
+  if (saved) { showKeyBar(saved); } else { document.getElementById('apiModal').style.display = 'flex'; }
+  renderTable();
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('apiModal').style.display !== 'none') saveApiKey();
+});
+
+// ═══════════════════════════════════════════
+// FILE HANDLING
+// ═══════════════════════════════════════════
 let fileData = null, fileMediaType = null;
 
 const dropZone = document.getElementById('dropZone');
@@ -259,31 +443,22 @@ function handleFile(file) {
   const typeMap = { pdf:'application/pdf', jpg:'image/jpeg', jpeg:'image/jpeg', png:'image/png' };
   if (!typeMap[ext]) { showError('Unsupported file type. Please upload a PDF or image.'); return; }
   fileMediaType = typeMap[ext];
-
   const reader = new FileReader();
   reader.onload = e => {
-    // PDFs: send natively — Claude API supports PDF up to ~32MB
     if (fileMediaType === 'application/pdf') {
-      const b64 = e.target.result.split(',')[1];
-      const sizeMB = (b64.length * 0.75 / 1024 / 1024).toFixed(1);
-      if (parseFloat(sizeMB) > 30) {
-        showError(`PDF is ${sizeMB} MB — please compress it below 30 MB and re-upload.`);
-        return;
-      }
-      fileData = b64;
+      fileData = e.target.result.split(',')[1];
       document.getElementById('fileName').textContent = file.name;
-      document.getElementById('fileSize').textContent = sizeMB + ' MB';
+      document.getElementById('fileSize').textContent = (file.size/1024).toFixed(0) + ' KB';
       document.getElementById('fileLoaded').style.display = 'flex';
       return;
     }
-    // Images: resize to max 1568px on longest side, compress to JPEG ~85%
     const img = new Image();
     img.onload = () => {
       const MAX = 1568;
-      let { width, height } = img;
+      let {width, height} = img;
       if (width > MAX || height > MAX) {
-        if (width > height) { height = Math.round(height * MAX / width); width = MAX; }
-        else { width = Math.round(width * MAX / height); height = MAX; }
+        if (width > height) { height = Math.round(height*MAX/width); width = MAX; }
+        else { width = Math.round(width*MAX/height); height = MAX; }
       }
       const canvas = document.createElement('canvas');
       canvas.width = width; canvas.height = height;
@@ -292,7 +467,7 @@ function handleFile(file) {
       fileData = compressed.split(',')[1];
       fileMediaType = 'image/jpeg';
       document.getElementById('fileName').textContent = file.name;
-      document.getElementById('fileSize').textContent = (fileData.length * 0.75 / 1024).toFixed(0) + ' KB (compressed)';
+      document.getElementById('fileSize').textContent = (fileData.length*0.75/1024).toFixed(0) + ' KB (compressed)';
       document.getElementById('fileLoaded').style.display = 'flex';
     };
     img.src = e.target.result;
@@ -300,6 +475,9 @@ function handleFile(file) {
   reader.readAsDataURL(file);
 }
 
+// ═══════════════════════════════════════════
+// GRADER
+// ═══════════════════════════════════════════
 function showError(msg) { const el = document.getElementById('errorMsg'); el.textContent = msg; el.style.display = 'block'; }
 function hideError() { document.getElementById('errorMsg').style.display = 'none'; }
 function setLoading(on) {
@@ -310,61 +488,17 @@ function setLoading(on) {
 
 function parseJSON(text) {
   let t = text.trim();
-  if (t.startsWith('```')) { t = t.replace(/^```json?/, '').replace(/```$/, '').trim(); }
+  if (t.startsWith('```')) { t = t.replace(/^```json?/,'').replace(/```$/,'').trim(); }
   return JSON.parse(t);
 }
-
-function saveApiKey() {
-  const val = document.getElementById('apiKeyInput').value.trim();
-  if (!val.startsWith('sk-ant-')) {
-    document.getElementById('modalError').style.display = 'block';
-    return;
-  }
-  localStorage.setItem('dts_api_key', val);
-  document.getElementById('apiModal').style.display = 'none';
-  showKeyBar(val);
-}
-
-function forgetKey() {
-  localStorage.removeItem('dts_api_key');
-  document.getElementById('keyBar').style.display = 'none';
-  document.getElementById('apiKeyInput').value = '';
-  document.getElementById('apiModal').style.display = 'flex';
-}
-
-function showKeyBar(key) {
-  const masked = key.slice(0, 10) + '••••••••' + key.slice(-4);
-  document.getElementById('keyBarText').textContent = 'API key: ' + masked;
-  document.getElementById('keyBar').style.display = 'flex';
-}
-
-// On load — check if key already saved
-window.addEventListener('load', () => {
-  const saved = localStorage.getItem('dts_api_key');
-  if (saved) {
-    showKeyBar(saved);
-  } else {
-    document.getElementById('apiModal').style.display = 'flex';
-  }
-});
-
-// Allow Enter key in modal
-document.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && document.getElementById('apiModal').style.display !== 'none') saveApiKey();
-});
 
 async function callClaude(messages, maxTokens=500) {
   const apiKey = localStorage.getItem('dts_api_key');
   if (!apiKey) { document.getElementById('apiModal').style.display = 'flex'; throw new Error('Please enter your API key.'); }
   const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-calls': 'true'
-    },
-    body: JSON.stringify({ model: 'claude-opus-4-5', max_tokens: maxTokens, messages })
+    method:'POST',
+    headers:{ 'Content-Type':'application/json', 'x-api-key':apiKey, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-calls':'true' },
+    body: JSON.stringify({ model:'claude-opus-4-5', max_tokens:maxTokens, messages })
   });
   if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || `API error ${res.status}`); }
   return (await res.json()).content[0].text;
@@ -382,33 +516,42 @@ async function gradeWorksheet() {
 
   try {
     const fileBlock = fileMediaType === 'application/pdf'
-      ? { type:'document', source:{ type:'base64', media_type:fileMediaType, data:fileData } }
-      : { type:'image', source:{ type:'base64', media_type:fileMediaType, data:fileData } };
+      ? {type:'document', source:{type:'base64', media_type:fileMediaType, data:fileData}}
+      : {type:'image', source:{type:'base64', media_type:fileMediaType, data:fileData}};
 
     const extractPrompt = `This is a student worksheet for the "${rubric.name}" financial literacy module.\n\nExtract:\n1. The answer letter (A-E) for each of the 3 MCQ questions. If blank, use "".\n2. The full verbatim text of the student's free-response answer.\n\nReturn ONLY a JSON object, no markdown:\n{"mcq": {"1": "A", "2": "B", "3": "C"}, "frq": "student free response text here"}`;
 
-    const extracted = parseJSON(await callClaude([
-      { role:'user', content:[fileBlock, { type:'text', text:extractPrompt }] }
-    ]));
+    const extracted = parseJSON(await callClaude([{role:'user', content:[fileBlock, {type:'text', text:extractPrompt}]}]));
 
     const mcqResults = {};
     let mcqScore = 0;
     for (const [q, correct] of Object.entries(rubric.mcq)) {
-      const student = (extracted.mcq[q] || '').toUpperCase().trim();
+      const student = (extracted.mcq[q]||'').toUpperCase().trim();
       const earned = student === correct ? 1 : 0;
-      mcqResults[q] = { student, correct, earned };
+      mcqResults[q] = {student, correct, earned};
       mcqScore += earned;
     }
 
     const frqPrompt = `You are grading a student's free-response answer for a financial literacy worksheet.\n\nMODULE: ${rubric.name}\n\nGRADING CRITERIA:\n${rubric.criteria}\n\nSTUDENT'S ANSWER:\n${extracted.frq}\n\nReturn ONLY a JSON object, no markdown:\n{"score": <integer 0 to ${rubric.frqMax}>, "feedback": "<1-3 sentences on what the student did well and what they missed>"}`;
-
-    const frqResult = parseJSON(await callClaude([{ role:'user', content:frqPrompt }], 400));
+    const frqResult = parseJSON(await callClaude([{role:'user', content:frqPrompt}], 400));
 
     const totalScore = mcqScore + frqResult.score;
     const totalMax = Object.keys(rubric.mcq).length + rubric.frqMax;
     const pct = Math.round(totalScore / totalMax * 100);
     const studentName = document.getElementById('studentName').value.trim() || 'Student';
 
+    // Save to gradebook
+    saveGrade({
+      id: Date.now(),
+      studentName, rubricKey, rubricName: rubric.name,
+      mcqScore, mcqMax: Object.keys(rubric.mcq).length,
+      frqScore: frqResult.score, frqMax: rubric.frqMax,
+      totalScore, totalMax, percent: pct,
+      feedback: frqResult.feedback,
+      date: new Date().toISOString()
+    });
+
+    // Render results
     document.getElementById('pctDisplay').textContent = pct + '%';
     document.getElementById('studentDisplay').textContent = studentName;
     document.getElementById('totalDisplay').textContent = `${totalScore} / ${totalMax} points · ${rubric.name}`;
@@ -424,7 +567,7 @@ async function gradeWorksheet() {
     for (const [q, r] of Object.entries(mcqResults)) {
       const row = document.createElement('div');
       row.className = 'mcq-row ' + (r.earned ? 'correct' : 'wrong');
-      row.innerHTML = `<span class="mcq-q">Q${q}</span><span class="mcq-ans">${r.student || '—'}</span><span class="mcq-status">${r.earned ? 'Correct' : 'Incorrect'}</span>${!r.earned ? `<span class="mcq-correct-ans">Correct: ${r.correct}</span>` : ''}`;
+      row.innerHTML = `<span class="mcq-q">Q${q}</span><span class="mcq-ans">${r.student||'—'}</span><span class="mcq-status">${r.earned?'Correct':'Incorrect'}</span>${!r.earned?`<span class="mcq-correct-ans">Correct: ${r.correct}</span>`:''}`;
       mcqList.appendChild(row);
     }
 
@@ -434,13 +577,142 @@ async function gradeWorksheet() {
     document.getElementById('frqFeedback').textContent = frqResult.feedback;
 
     document.getElementById('results').style.display = 'block';
-    document.getElementById('results').scrollIntoView({ behavior:'smooth', block:'start' });
+    document.getElementById('results').scrollIntoView({behavior:'smooth', block:'start'});
 
-  } catch (err) {
+  } catch(err) {
     showError('Error: ' + err.message);
   } finally {
     setLoading(false);
   }
+}
+
+// ═══════════════════════════════════════════
+// GRADEBOOK (localStorage)
+// ═══════════════════════════════════════════
+function loadGrades() {
+  try { return JSON.parse(localStorage.getItem('dts_grades') || '[]'); } catch { return []; }
+}
+
+function saveGrade(entry) {
+  const grades = loadGrades();
+  grades.push(entry);
+  localStorage.setItem('dts_grades', JSON.stringify(grades));
+}
+
+function deleteGrade(id) {
+  const grades = loadGrades().filter(g => g.id !== id);
+  localStorage.setItem('dts_grades', JSON.stringify(grades));
+  renderTable();
+}
+
+function clearAll() {
+  if (!confirm('Clear all grades? This cannot be undone.')) return;
+  localStorage.removeItem('dts_grades');
+  renderTable();
+}
+
+function updateStats(grades) {
+  const total = grades.length;
+  const students = new Set(grades.map(g => g.studentName.toLowerCase())).size;
+  const avg = total ? Math.round(grades.reduce((s,g) => s+g.percent, 0) / total) : null;
+  const byMod = {};
+  grades.forEach(g => { if (!byMod[g.rubricKey]) byMod[g.rubricKey] = []; byMod[g.rubricKey].push(g.percent); });
+  let topKey = '—', topAvg = 0;
+  for (const [k,arr] of Object.entries(byMod)) {
+    const a = Math.round(arr.reduce((s,v) => s+v,0)/arr.length);
+    if (a > topAvg) { topAvg = a; topKey = k; }
+  }
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statStudents').textContent = students;
+  document.getElementById('statAvg').textContent = avg !== null ? avg + '%' : '—';
+  document.getElementById('statTop').textContent = topKey;
+  document.getElementById('statTopSub').textContent = topKey !== '—' ? topAvg + '% avg' : '';
+}
+
+function renderTable() {
+  const search = (document.getElementById('gbSearch')?.value || '').toLowerCase();
+  const mod    = document.getElementById('gbMod')?.value || '';
+  const sort   = document.getElementById('gbSort')?.value || 'date_desc';
+  let grades = loadGrades();
+
+  updateStats(grades);
+
+  grades = grades.filter(g => {
+    if (search && !g.studentName.toLowerCase().includes(search)) return false;
+    if (mod && g.rubricKey !== mod) return false;
+    return true;
+  });
+
+  grades.sort((a,b) => {
+    if (sort==='date_desc') return new Date(b.date)-new Date(a.date);
+    if (sort==='date_asc')  return new Date(a.date)-new Date(b.date);
+    if (sort==='name_asc')  return a.studentName.localeCompare(b.studentName);
+    if (sort==='pct_desc')  return b.percent-a.percent;
+    if (sort==='pct_asc')   return a.percent-b.percent;
+  });
+
+  const tbody = document.getElementById('gradesBody');
+  const empty = document.getElementById('gbEmpty');
+  const table = document.getElementById('gradesTable');
+
+  if (!grades.length) {
+    empty.style.display = 'block'; table.style.display = 'none'; return;
+  }
+  empty.style.display = 'none'; table.style.display = 'table';
+  tbody.innerHTML = '';
+
+  grades.forEach(g => {
+    const cls = g.percent >= 85 ? 'pct-high' : g.percent >= 70 ? 'pct-mid' : 'pct-low';
+    const date = new Date(g.date).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><span class="student-link" onclick="showStudent('${g.studentName.replace(/'/g,"\\'")}')"> ${g.studentName}</span></td>
+      <td>${g.rubricKey}</td>
+      <td>${g.mcqScore}/${g.mcqMax}</td>
+      <td>${g.frqScore}/${g.frqMax}</td>
+      <td>${g.totalScore}/${g.totalMax}</td>
+      <td><span class="pct-badge ${cls}">${g.percent}%</span></td>
+      <td class="feedback-cell" title="${g.feedback}">${g.feedback}</td>
+      <td style="color:var(--ink-muted);white-space:nowrap;font-size:11px">${date}</td>
+      <td><button class="del-btn" onclick="deleteGrade(${g.id})">×</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function showStudent(name) {
+  const grades = loadGrades().filter(g => g.studentName.toLowerCase() === name.toLowerCase());
+  const avg = Math.round(grades.reduce((s,g) => s+g.percent,0)/grades.length);
+  document.getElementById('panelName').textContent = name;
+  document.getElementById('panelSub').textContent = `${grades.length} submission${grades.length!==1?'s':''} · avg ${avg}%`;
+  const grid = document.getElementById('panelModules');
+  grid.innerHTML = '';
+  grades.forEach(g => {
+    const cls = g.percent>=85?'pct-high':g.percent>=70?'pct-mid':'pct-low';
+    const div = document.createElement('div');
+    div.className = 'module-tile';
+    div.innerHTML = `<div class="mod-key">${g.rubricKey}</div><div class="mod-score">${g.totalScore}/${g.totalMax}</div><div><span class="pct-badge ${cls}">${g.percent}%</span></div>`;
+    grid.appendChild(div);
+  });
+  document.getElementById('studentPanel').style.display = 'block';
+  document.getElementById('studentPanel').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function closePanel() { document.getElementById('studentPanel').style.display = 'none'; }
+
+function exportCSV() {
+  const grades = loadGrades();
+  if (!grades.length) { alert('No grades to export.'); return; }
+  const headers = ['Student','Module','MCQ Score','MCQ Max','FRQ Score','FRQ Max','Total','Max','Percent','Feedback','Date'];
+  const rows = grades.map(g => [
+    `"${g.studentName}"`, g.rubricKey, g.mcqScore, g.mcqMax,
+    g.frqScore, g.frqMax, g.totalScore, g.totalMax, g.percent,
+    `"${(g.feedback||'').replace(/"/g,'""')}"`, g.date
+  ]);
+  const csv = [headers,...rows].map(r=>r.join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'dts_grades.csv';
+  a.click();
 }
 </script>
 </body>
