@@ -523,14 +523,16 @@ async function gradeWorksheet() {
       ? {type:'document', source:{type:'base64', media_type:fileMediaType, data:fileData}}
       : {type:'image', source:{type:'base64', media_type:fileMediaType, data:fileData}};
 
-    const extractPrompt = `This is a scanned student worksheet for the "${rubric.name}" financial literacy module, with 3 multiple-choice questions (options A-E each) and 1 free-response question.\n\nFor each MCQ question, look only at what is visibly marked (filled in, shaded, or circled) on the page for that specific question. Do not use your own knowledge of what the correct answer to the question is - only report what the student actually marked. Go through Q1, Q2, and Q3 one at a time and state which option letter is marked, or "" if none or more than one is clearly marked.\n\nThen transcribe the student's free-response answer verbatim.\n\nFinally, output your answer as a fenced json block:\n\`\`\`json\n{"mcq": {"1": "A", "2": "B", "3": "C"}, "frq": "student free response text here"}\n\`\`\``;
+    const extractPrompt = `This is a scanned student worksheet for the "${rubric.name}" financial literacy module. It has 3 multiple-choice questions, each with 5 lettered options (A-E) preceded by a circle, and 1 free-response question.\n\nIMPORTANT: This is a real student submission, and it is common and expected for a student to mark an option that is NOT the answer a knowledgeable person would consider correct. Your job here is pure transcription, not grading - report exactly which circle has ink/shading in it, even when that differs from what you'd expect the "right" answer to be. Do not let your own knowledge of the subject influence which circle you report as marked.\n\nFor each of the 3 MCQ questions, examine each of the 5 circles (A, B, C, D, E) one at a time and judge, purely from the ink/shading you observe, whether that specific circle is filled/darkened (true) or empty/outline-only (false). Exactly one option per question should end up true; if your first pass finds zero or more than one, look again more carefully before finalizing.\n\nThen transcribe the student's free-response answer verbatim.\n\nFinally, output your answer as a fenced json block, with a boolean for every option of every question:\n\`\`\`json\n{"mcq": {"1": {"A": false, "B": true, "C": false, "D": false, "E": false}, "2": {"A": false, "B": false, "C": false, "D": true, "E": false}, "3": {"A": false, "B": false, "C": false, "D": false, "E": true}}, "frq": "student free response text here"}\n\`\`\``;
 
-    const extracted = parseJSON(await callClaude([{role:'user', content:[fileBlock, {type:'text', text:extractPrompt}]}], 1000));
+    const extracted = parseJSON(await callClaude([{role:'user', content:[fileBlock, {type:'text', text:extractPrompt}]}], 1200));
 
     const mcqResults = {};
     let mcqScore = 0;
     for (const [q, correct] of Object.entries(rubric.mcq)) {
-      const student = (extracted.mcq[q]||'').toUpperCase().trim();
+      const marks = extracted.mcq[q] || {};
+      const marked = Object.entries(marks).filter(([, v]) => v === true).map(([letter]) => letter);
+      const student = marked.length === 1 ? marked[0].toUpperCase().trim() : '';
       const earned = student === correct ? 1 : 0;
       mcqResults[q] = {student, correct, earned};
       mcqScore += earned;
