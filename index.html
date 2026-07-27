@@ -495,9 +495,9 @@ function parseJSON(text) {
 async function callClaude(messages, maxTokens=500) {
   const apiKey = localStorage.getItem('dts_api_key');
   if (!apiKey) { document.getElementById('apiModal').style.display = 'flex'; throw new Error('Please enter your API key.'); }
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const res = await fetch('/api/claude', {
     method:'POST',
-    headers:{ 'Content-Type':'application/json', 'x-api-key':apiKey, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-calls':'true' },
+    headers:{ 'Content-Type':'application/json', 'x-api-key':apiKey },
     body: JSON.stringify({ model:'claude-opus-4-5', max_tokens:maxTokens, messages })
   });
   if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || `API error ${res.status}`); }
